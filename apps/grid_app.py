@@ -165,9 +165,9 @@ def make_map_utm(Xutm, Yutm, Zutm, transformer_inv, df,
     "pressure (mb)"
     ]
     
-    label_choice = st.selectbox("Select Colorbar Label", ["Custom"] + preset_labels)
+    label_choice = st.selectbox("Select Colorbar Label", ["Custom"] + preset_labels,help="Select/Customise ColorBar **Label** based on your data type")
     if label_choice == "Custom":
-        cbar_label = st.text_input("Enter custom label", "My Custom Label")
+        cbar_label = st.text_input("custom label", "My Custom Label",help="Customise ColorBar **Label** based on your data type")
     else:
         cbar_label = label_choice
     cbar.set_label(cbar_label)
@@ -245,20 +245,59 @@ def make_3d_plot(Xutm, Yutm, Zutm, cmap, title=""):
 # Streamlit App
 # -------------------------------------------------
 def run():
-    st.title("🗺️ Geophysical Data Mapping (Grid View)")
+    st.markdown("<h1 style='text-align: center;'>🗺️ Geophysical Data Mapping<br><span style='font-size: 0.6em;'>(Grid View)</span></h1>", unsafe_allow_html=True)
+    #st.title("🗺️ Geophysical Data Mapping (Grid View)")
 
-    uploaded_file = st.file_uploader("Upload Excel file", type=["xlsx"])
-    map_title = st.text_input("Enter Map Title", "Apparent Resistivity Map")
+    uploaded_file = st.file_uploader("Upload Excel file", type=["xlsx"],help="upload your data file, if need input template format: download below")
+    
+    # Path to template excel file
+    template_path = "template_Rudra Geophysicist.xlsx"
 
-    grid_nx = st.number_input("Grid NX", min_value=10, max_value=500, value=60)
-    grid_ny = st.number_input("Grid NY", min_value=10, max_value=500, value=60)
+     # Download button
+    with open(template_path, "rb") as file:
+        st.download_button(
+            label="📥 Download Input Template",
+            data=file,
+            help ="Input template",
+            file_name="template_Rudra Geophysicist.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
-    interp_method = st.selectbox("Interpolation Method", ["nearest", "linear", "cubic"])
-    contour_option = st.radio("Contour Levels", ["Auto", "Interval"])
+    map_help = """
+                Enter the title of your map.  
+                This text will appear at the top of the generated grid or image.  
+                (e.g., *Apparent Resistivity Map*, *Magnetic Anomaly Map*, etc.).
+               """
+    map_title = st.text_input("Map Title", "Apparent Resistivity Map",help=map_help)
+    help_text = """
+                This sets the grid resolution for interpolation.  
+                - **Lower values** (e.g., 20×20) → fast processing, coarse map.  
+                - **Higher values** (e.g., 200×200) → smoother result, slower calculation.  
+                Choose based on the size of your dataset and performance needs.
+                """
+    grid_nx = st.number_input("Grid NX", min_value=10, max_value=500, value=60,help=help_text)
+    grid_ny = st.number_input("Grid NY", min_value=10, max_value=500, value=60,help=help_text)
+    
+    interp_help = """
+                    Select an interpolation method to build the grid model:
+                    - **nearest**: Fastest, but rough and blocky interpolation.
+                    - **linear**: Most commonly used — smooth but may miss small details.
+                    - **cubic**: Smoothest result, but slower, especially for large datasets.
+                  """
+    
+    
+    contour_help = """
+                    Defines how many contour lines or intervals appear on the contour map.  
+                    - Fewer levels (e.g., 5–10): simple visualization, good for large areas.  
+                    - More levels (e.g., 25+): detailed map showing subtle variations.  
+                    Choose based on data range and resolution for best results.
+                   """
+    interp_method = st.selectbox("Interpolation Method", ["nearest", "linear", "cubic"],help=interp_help)
+    contour_option = st.radio("Contour Levels", ["Auto", "Interval"],help= contour_help)
     if contour_option == "Auto":
         contour_levels = 15
     else:
-        interval = st.number_input("Enter Contour Interval", min_value=1, value=10)
+        interval = st.number_input("Contour Interval", min_value=1, value=10,help="Enter required contour intervals, must be integer")
         contour_levels = np.arange(0, 1000, interval)
 
     # ✅ colormap dictionary
@@ -273,8 +312,11 @@ def run():
         "inferno": "inferno",
         
     }
-
-    cmap_choice_label = st.selectbox("Colormap", list(cmap_dict.keys()))
+    colormap_help = """
+                    Colormap determines how values are mapped to colors on the plot.
+                    Select the required color ramp given.
+                    """
+    cmap_choice_label = st.selectbox("Colormap", list(cmap_dict.keys()),help=colormap_help)
     cmap_choice = cmap_dict[cmap_choice_label]
 
     if uploaded_file is not None:
